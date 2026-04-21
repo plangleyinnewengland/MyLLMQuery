@@ -1,0 +1,61 @@
+# This app allows you to select a model before sending a query.
+
+# Import packages
+# This section imports the necessary libraries and loads environment variables for API keys. It also sets up the OpenAI client and defines the available LLM models for querying.
+
+import os
+import requests
+from dotenv import load_dotenv
+from openai import OpenAI
+from IPython.display import Markdown, display
+load_dotenv(override=True)
+openai_api_key = os.getenv('OPENAI_API_KEY')
+openrouter_api_key = os.getenv('OPENROUTER_API_KEY')
+
+# LLM Models to choose from
+openrouter_models = {
+  "mistral": "mistralai/mistral-small-3.1-24b-instruct:free",
+  "llama": "meta-llama/llama-4-scout:free",
+  "gemini": "google/gemini-2.5-flash-lite-preview",
+  "claude": "anthropic/claude-sonnet-4-20250514",
+  "openai": "openai/gpt-4.1-mini",
+  "deepseek": "deepseek/deepseek-chat-v3-0324:free",
+}
+#Connect to OpenAI client library a thin wrapper around calls to HTTP endpoints
+
+openai = OpenAI()
+
+openrouter_url = "https://openrouter.ai/api/v1"
+ollama_url = "http://localhost:11434/v1"
+
+openrouter = OpenAI(base_url=openrouter_url, api_key=openrouter_api_key)
+ollama = OpenAI(api_key="ollama", base_url=ollama_url)
+
+# prompt
+
+user_question = input("Enter your question for the LLM: ")
+
+print("\nAvailable models:")
+for i, model_name in enumerate(openrouter_models.keys(), 1):
+  print(f"{i}. {model_name}")
+
+model_choice = input("\nSelect a model (1-6): ").strip()
+model_names = list(openrouter_models.keys())
+
+if model_choice.isdigit() and 1 <= int(model_choice) <= len(model_names):
+  selected_model = model_names[int(model_choice) - 1]
+else:
+  selected_model = "mistral"  # default model
+  print(f"Invalid choice. Using default model: {selected_model}")
+
+prompt = [
+  {"role": "user", "content": user_question},
+]
+
+# Call the selected model via OpenRouter
+print(f"\nQuerying {selected_model} ({openrouter_models[selected_model]})...\n")
+response = openrouter.chat.completions.create(
+  model=openrouter_models[selected_model],
+  messages=prompt,
+)
+print(response.choices[0].message.content)
